@@ -39,7 +39,9 @@ export default function NdaCreator({ coverPageTemplate, standardTerms }: Props) 
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    // On large screens the page fits the viewport: the chat and preview scroll independently,
+    // so the message box always stays in view. Print falls back to normal document flow.
+    <div className="flex min-h-screen flex-col lg:h-screen print:block print:h-auto">
       <header className="flex flex-wrap items-center justify-between gap-4 border-b-4 border-brand-accent bg-white px-6 py-4 print:hidden">
         <div>
           <h1 className="text-lg font-semibold text-brand-navy">Mutual NDA Creator</h1>
@@ -66,11 +68,14 @@ export default function NdaCreator({ coverPageTemplate, standardTerms }: Props) 
         </div>
       </header>
 
-      <main className="grid flex-1 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] print:block">
-        <aside className="border-b border-slate-200 bg-white lg:sticky lg:top-0 lg:h-screen lg:border-r lg:border-b-0 print:hidden">
+      <main className="grid flex-1 lg:min-h-0 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:grid-rows-1 print:block">
+        <aside className="border-b border-slate-200 bg-white lg:min-h-0 lg:border-r lg:border-b-0 print:hidden">
           <NdaChat data={data} onUpdate={(updates) => setData((current) => applyUpdates(current, updates))} />
         </aside>
-        <section className="bg-slate-100 p-4 sm:p-8 print:bg-white print:p-0" aria-label="Document preview">
+        <section
+          className="bg-slate-100 p-4 sm:p-8 lg:overflow-y-auto print:overflow-visible print:bg-white print:p-0"
+          aria-label="Document preview"
+        >
           <NdaPreview coverPage={coverPage} standardTerms={standardTerms} />
         </section>
       </main>
