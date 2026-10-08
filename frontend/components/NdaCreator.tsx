@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import NdaForm from "@/components/NdaForm";
+import NdaChat from "@/components/NdaChat";
 import NdaPreview from "@/components/NdaPreview";
+import { applyUpdates } from "@/lib/chat";
 import { defaultNdaData, fillCoverPage } from "@/lib/nda";
 import { signOut } from "@/lib/session";
 import { useRequireUser } from "@/lib/useRequireUser";
@@ -38,12 +39,14 @@ export default function NdaCreator({ coverPageTemplate, standardTerms }: Props) 
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    // On large screens the page fits the viewport: the chat and preview scroll independently,
+    // so the message box always stays in view. Print falls back to normal document flow.
+    <div className="flex min-h-screen flex-col lg:h-screen print:block print:h-auto">
       <header className="flex flex-wrap items-center justify-between gap-4 border-b-4 border-brand-accent bg-white px-6 py-4 print:hidden">
         <div>
           <h1 className="text-lg font-semibold text-brand-navy">Mutual NDA Creator</h1>
           <p className="text-sm text-brand-gray">
-            Fill in the key terms and download a completed Common Paper Mutual NDA.
+            Chat with the AI to fill in the key terms, then download a completed Common Paper Mutual NDA.
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -65,11 +68,14 @@ export default function NdaCreator({ coverPageTemplate, standardTerms }: Props) 
         </div>
       </header>
 
-      <main className="grid flex-1 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] print:block">
-        <aside className="border-b border-slate-200 bg-white p-6 lg:sticky lg:top-0 lg:max-h-screen lg:overflow-y-auto lg:border-r lg:border-b-0 print:hidden">
-          <NdaForm data={data} onChange={setData} />
+      <main className="grid flex-1 lg:min-h-0 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:grid-rows-1 print:block">
+        <aside className="border-b border-slate-200 bg-white lg:min-h-0 lg:border-r lg:border-b-0 print:hidden">
+          <NdaChat data={data} onUpdate={(updates) => setData((current) => applyUpdates(current, updates))} />
         </aside>
-        <section className="bg-slate-100 p-4 sm:p-8 print:bg-white print:p-0" aria-label="Document preview">
+        <section
+          className="bg-slate-100 p-4 sm:p-8 lg:overflow-y-auto print:overflow-visible print:bg-white print:p-0"
+          aria-label="Document preview"
+        >
           <NdaPreview coverPage={coverPage} standardTerms={standardTerms} />
         </section>
       </main>
