@@ -2,9 +2,10 @@
 
 from contextlib import asynccontextmanager, closing
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status
 from fastapi.staticfiles import StaticFiles
 
+from app.chat import ChatRequest, ChatResponse, LlmResponseError, LlmUnavailableError, chat_turn
 from app.config import Settings
 from app.db import connect, init_db
 
@@ -24,6 +25,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         with closing(connect(settings.database_path)) as conn:
             conn.execute("SELECT 1")
         return {"status": "ok"}
+
+    @app.post("/api/chat")
+    def chat(request: ChatRequest) -> ChatResponse:
+        try:
+            return chat_turn(request, settings)
+        except LlmUnavailableError as exc:
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc
+        except LlmResponseError as exc:
+            raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
 
     # Mounted last so it never shadows /api routes. Skipped when the frontend
     # hasn't been built (e.g. running the API alone during development).

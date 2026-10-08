@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from app.config import Settings
+from app.config import DEFAULT_LLM_MODEL, Settings
 from app.main import create_app
 
 
@@ -80,7 +80,23 @@ def test_unknown_path_serves_404_page(client: TestClient):
 def test_settings_from_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     monkeypatch.setenv("PRELEGAL_DB_PATH", str(tmp_path / "x.db"))
     monkeypatch.setenv("PRELEGAL_STATIC_DIR", str(tmp_path / "static"))
-    assert Settings.from_env() == Settings(database_path=tmp_path / "x.db", static_dir=tmp_path / "static")
+    monkeypatch.setenv("OPEN_ROUTER_API_KEY", "sk-test")
+    monkeypatch.setenv("PRELEGAL_LLM_MODEL", "openrouter/some/model:free")
+    assert Settings.from_env() == Settings(
+        database_path=tmp_path / "x.db",
+        static_dir=tmp_path / "static",
+        openrouter_api_key="sk-test",
+        llm_model="openrouter/some/model:free",
+    )
+
+
+def test_settings_llm_defaults(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.delenv("OPEN_ROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("PRELEGAL_LLM_MODEL", raising=False)
+    settings = Settings.from_env()
+    assert settings.openrouter_api_key is None
+    assert settings.llm_model == DEFAULT_LLM_MODEL
+    assert settings.llm_model.endswith(":free")
 
 
 def test_api_still_works_without_frontend_build(tmp_path: Path):
