@@ -5,6 +5,15 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* PreLegal brand palette */
+@theme {
+  --color-brand-accent: #ecad8a;
+  --color-brand-primary: #209dd7;
+  --color-brand-secondary: #753991;
+  --color-brand-navy: #032147;
+  --color-brand-gray: #888888;
+}
+
 body {
   background: var(--color-slate-100);
   color: var(--color-slate-900);
