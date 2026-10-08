@@ -18,9 +18,10 @@ npm run lint
 npm run build
 ```
 
-The chat calls the backend at the same origin (`/api/chat`), so `npm run dev` alone shows the UI
-but cannot chat. To try the chat, run `npm run build` and serve `out/` through the backend
-(see [`backend/README.md`](../backend/README.md)) at http://localhost:8000.
+The chat calls `/api/chat` on the same origin. In production that's FastAPI serving `out/`. Under
+`npm run dev`, Next proxies `/api/*` to the backend, so run it too (see
+[`backend/README.md`](../backend/README.md)). It defaults to http://localhost:8000; override it with
+`PRELEGAL_API_URL`.
 
 ## Structure
 
