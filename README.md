@@ -16,8 +16,13 @@ statically built Next.js frontend at `/`, on http://localhost:8000.
 | Linux   | `scripts/start-linux.sh`      | `scripts/stop-linux.sh`      |
 | Windows | `scripts/start-windows.ps1`   | `scripts/stop-windows.ps1`   |
 
-The SQLite database is temporary and is recreated from scratch every time the container starts.
-Sign-in is a placeholder for now: any email and password are accepted.
+Create an account at `/signup/`, then chat with the AI at `/create/` to draft an agreement. Each
+draft is saved automatically and listed under "My documents" (`/documents/`), where you can
+reopen it and carry on. Generated documents are drafts and are subject to legal review.
+
+The SQLite database is temporary and is recreated from scratch every time the container starts,
+so accounts, sessions and saved drafts last only until the next restart. Behind HTTPS, set
+`PRELEGAL_COOKIE_SECURE=1` (for example in `.env`) so the session cookie is only sent securely.
 
 ## Development
 

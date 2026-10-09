@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import DocumentCreator from "@/components/DocumentCreator";
 import { readDocumentTemplates, readRegistry } from "@/lib/templates";
@@ -12,5 +13,10 @@ const registry = readRegistry();
 const templates = readDocumentTemplates(registry);
 
 export default function CreatePage() {
-  return <DocumentCreator registry={registry} templates={templates} />;
+  // The creator reads ?doc= (useSearchParams), which a static export only knows in the browser.
+  return (
+    <Suspense fallback={null}>
+      <DocumentCreator registry={registry} templates={templates} />
+    </Suspense>
+  );
 }

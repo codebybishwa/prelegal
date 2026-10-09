@@ -20,6 +20,8 @@ class Settings:
     openrouter_api_key: str | None = None
     llm_model: str = DEFAULT_LLM_MODEL
     documents_path: Path = DEFAULT_DOCUMENTS_PATH
+    # Mark the session cookie Secure; enable when the app is served over HTTPS.
+    cookie_secure: bool = False
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -29,4 +31,5 @@ class Settings:
             documents_path=Path(os.environ.get("PRELEGAL_DOCUMENTS_PATH", DEFAULT_DOCUMENTS_PATH)),
             openrouter_api_key=os.environ.get("OPEN_ROUTER_API_KEY") or None,
             llm_model=os.environ.get("PRELEGAL_LLM_MODEL") or DEFAULT_LLM_MODEL,
+            cookie_secure=os.environ.get("PRELEGAL_COOKIE_SECURE", "").lower() in ("1", "true", "yes"),
         )

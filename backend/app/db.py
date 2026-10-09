@@ -11,11 +11,33 @@ CREATE TABLE users (
     password_hash TEXT NOT NULL,
     created_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Only a hash of each session token is stored, so a leaked database can't sign anyone in.
+CREATE TABLE sessions (
+    token_hash TEXT PRIMARY KEY,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expires_at TEXT NOT NULL
+);
+
+-- A document a user has drafted through the chat, saved after every turn.
+CREATE TABLE drafts (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    document_id   TEXT NOT NULL,
+    values_json   TEXT NOT NULL,
+    messages_json TEXT NOT NULL,
+    created_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX drafts_by_user ON drafts(user_id, updated_at DESC);
 """
 
 
 def connect(database_path: Path) -> sqlite3.Connection:
-    return sqlite3.connect(database_path)
+    conn = sqlite3.connect(database_path)
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
 
 
 def init_db(database_path: Path) -> None:

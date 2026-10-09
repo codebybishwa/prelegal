@@ -1,17 +1,32 @@
+import { ApiError, apiFetch } from "@/lib/api";
+
 /**
- * Placeholder session for the fake login: the signed-in email lives in sessionStorage.
- * There is no authentication yet; this only remembers who "signed in" for this tab.
+ * Accounts and sign-in. The backend keeps the session in an HttpOnly cookie, so the browser
+ * sends it with every API call and scripts never see it.
  */
-const USER_EMAIL_KEY = "prelegal.userEmail";
 
-export function signIn(email: string): void {
-  sessionStorage.setItem(USER_EMAIL_KEY, email.trim());
+type Account = { email: string };
+
+const FALLBACK = "PreLegal could not be reached. Please try again.";
+
+export async function signUp(email: string, password: string): Promise<string> {
+  return (await apiFetch<Account>("/api/auth/signup", FALLBACK, { email, password })).email;
 }
 
-export function signOut(): void {
-  sessionStorage.removeItem(USER_EMAIL_KEY);
+export async function signIn(email: string, password: string): Promise<string> {
+  return (await apiFetch<Account>("/api/auth/signin", FALLBACK, { email, password })).email;
 }
 
-export function getUserEmail(): string | null {
-  return sessionStorage.getItem(USER_EMAIL_KEY) || null;
+export async function signOut(): Promise<void> {
+  await apiFetch<void>("/api/auth/signout", FALLBACK, {});
+}
+
+/** The signed-in user's email, or null when there is no valid session. */
+export async function fetchCurrentUser(): Promise<string | null> {
+  try {
+    return (await apiFetch<Account>("/api/auth/me", FALLBACK)).email;
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401) return null;
+    throw e;
+  }
 }

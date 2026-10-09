@@ -29,9 +29,17 @@ def settings(tmp_path: Path) -> Settings:
     )
 
 
+def sign_up(client: TestClient, email: str = "ada@acme.com") -> None:
+    """Signs up a user; the TestClient keeps the session cookie for later requests."""
+    response = client.post("/api/auth/signup", json={"email": email, "password": "correct horse"})
+    assert response.status_code == 201
+
+
 @pytest.fixture
 def client(settings: Settings):
+    """A client signed in as ada@acme.com."""
     with TestClient(create_app(settings)) as client:
+        sign_up(client)
         yield client
 
 
@@ -97,6 +105,7 @@ def test_chat_returns_reply_and_updated_values(client: TestClient, fake_llm):
     assert response.json() == {
         "reply": "Got it. Who is the other party?",
         "documentId": "mutual-nda",
+        "draftId": 1,
         "values": nda_values(
             governingLaw="Delaware",
             effectiveDate="2026-10-08",
@@ -123,7 +132,12 @@ def test_chat_without_a_document_ignores_updates(client: TestClient, fake_llm):
 
     response = client.post("/api/chat", json=chat_body("Hi", None, governingLaw="ignored"))
 
-    assert response.json() == {"reply": "What would you like to draft?", "documentId": None, "values": {}}
+    assert response.json() == {
+        "reply": "What would you like to draft?",
+        "documentId": None,
+        "values": {},
+        "draftId": None,
+    }
 
 
 def test_chat_unsupported_request_keeps_the_document_unselected(client: TestClient, fake_llm):
@@ -132,7 +146,7 @@ def test_chat_unsupported_request_keeps_the_document_unselected(client: TestClie
 
     response = client.post("/api/chat", json=chat_body("I need an employment contract", None))
 
-    assert response.json() == {"reply": reply, "documentId": None, "values": {}}
+    assert response.json() == {"reply": reply, "documentId": None, "values": {}, "draftId": None}
 
 
 def test_chat_switch_carries_shared_values(client: TestClient, fake_llm):
@@ -219,6 +233,7 @@ def test_chat_without_api_key_is_503(fake_llm, tmp_path: Path):
     fake = fake_llm(turn())
     no_key = Settings(database_path=tmp_path / "x.db", static_dir=tmp_path / "missing", openrouter_api_key=None)
     with TestClient(create_app(no_key)) as client:
+        sign_up(client)
         response = client.post("/api/chat", json=chat_body())
 
     assert response.status_code == 503
@@ -235,6 +250,7 @@ def test_chat_refuses_paid_model(fake_llm, tmp_path: Path):
         llm_model="openrouter/openai/gpt-oss-120b",
     )
     with TestClient(create_app(paid)) as client:
+        sign_up(client)
         response = client.post("/api/chat", json=chat_body())
 
     assert response.status_code == 503
