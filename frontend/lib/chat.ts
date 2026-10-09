@@ -1,43 +1,35 @@
-import type { NdaData, Party } from "@/lib/nda";
+import type { DocumentDef, Values } from "@/lib/documents";
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
-/** The fields the AI changed this turn (mirrors the backend's ChatResponse.updates). */
-export type NdaUpdates = Partial<Omit<NdaData, "party1" | "party2">> & {
-  party1?: Partial<Party>;
-  party2?: Partial<Party>;
-};
+/** The selected document and its values; the backend owns both and returns them each turn. */
+export type DocumentState = { documentId: string | null; values: Values };
 
-export type ChatReply = { reply: string; updates: NdaUpdates };
+export type ChatReply = DocumentState & { reply: string };
 
-export const GREETING: ChatMessage = {
-  role: "assistant",
-  content:
-    "Hi! I'll help you put together a Mutual Non-Disclosure Agreement. " +
-    "To start, who are the two parties: which companies, and who will sign for each?",
-};
+export const NO_DOCUMENT: DocumentState = { documentId: null, values: {} };
 
-const FALLBACK_ERROR = "The AI assistant could not be reached. Please try again.";
-
-/** Merges the AI's changes into the NDA, keeping party fields it didn't mention. */
-export function applyUpdates(data: NdaData, updates: NdaUpdates): NdaData {
-  const { party1, party2, ...rest } = updates;
+/** The opening message, listing the documents the AI can draft. */
+export function buildGreeting(documents: DocumentDef[]): ChatMessage {
   return {
-    ...data,
-    ...rest,
-    party1: { ...data.party1, ...party1 },
-    party2: { ...data.party2, ...party2 },
+    role: "assistant",
+    content:
+      "Hi! I'll help you draft a legal agreement. I can prepare: " +
+      `${documents.map((doc) => doc.name).join(", ")}. ` +
+      "What would you like to draft, and who is it between?",
   };
 }
 
-/** Sends the conversation and current NDA to the backend; throws with a user-facing message on failure. */
-export async function sendChat(messages: ChatMessage[], nda: NdaData): Promise<ChatReply> {
+const FALLBACK_ERROR = "The AI assistant could not be reached. Please try again.";
+
+/** Sends the conversation and current document to the backend; throws with a user-facing message on failure. */
+export async function sendChat(messages: ChatMessage[], { documentId, values }: DocumentState): Promise<ChatReply> {
   let response: Response;
   try {
     response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages, nda }),
+      body: JSON.stringify({ messages, documentId, values }),
     });
   } catch {
     throw new Error(FALLBACK_ERROR);

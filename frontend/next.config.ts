@@ -18,7 +18,7 @@ export default function nextConfig(phase: string): NextConfig {
   return {
     // Build to static files in out/, which the FastAPI backend serves.
     output: "export",
-    // Emit /nda/index.html (not /nda.html) so a plain static file server resolves every route.
+    // Emit /create/index.html (not /create.html) so a plain static file server resolves every route.
     trailingSlash: true,
   };
 }

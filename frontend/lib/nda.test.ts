@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { defaultNdaData, escapeMarkdown, fillCoverPage, formatDate, type NdaData } from "./nda";
+import { defaultNdaData, fillCoverPage, toNdaData, type NdaData } from "./nda";
 
 const template = readFileSync(
   path.join(import.meta.dirname, "..", "..", "templates", "Mutual-NDA-coverpage.md"),
@@ -81,14 +81,42 @@ describe("fillCoverPage", () => {
   });
 });
 
-describe("escapeMarkdown", () => {
-  it("backslash-escapes markdown and HTML punctuation", () => {
-    expect(escapeMarkdown("*a* [b](c) <d>")).toBe("\\*a\\* \\[b\\]\\(c\\) \\<d\\>");
+describe("toNdaData", () => {
+  it("maps the generic document values onto the NDA's data", () => {
+    expect(
+      toNdaData({
+        purpose: "Exploring a joint venture.",
+        effectiveDate: "2026-10-06",
+        mndaTerm: "2",
+        confidentialityTerm: "3",
+        governingLaw: "Delaware",
+        chosenCourts: "courts located in New Castle, DE",
+        modifications: "Section 5 is amended.",
+        "party1.name": "Ada Lovelace",
+        "party1.title": "CEO",
+        "party1.company": "Acme Inc.",
+        "party1.noticeAddress": "ada@acme.com",
+        "party2.name": "Alan Turing",
+        "party2.title": "CTO",
+        "party2.company": "Globex",
+        "party2.noticeAddress": "alan@globex.com",
+      }),
+    ).toEqual(filled);
   });
-});
 
-describe("formatDate", () => {
-  it("formats an ISO date without timezone shift", () => {
-    expect(formatDate("2026-01-01")).toBe("January 1, 2026");
+  it("maps 'none' terms to open-ended and missing values to blanks", () => {
+    const data = toNdaData({ mndaTerm: "none", confidentialityTerm: "none" });
+
+    expect(data.mndaTermYears).toBeNull();
+    expect(data.confidentialityYears).toBeNull();
+    expect(data.purpose).toBe("");
+    expect(data.party2).toEqual({ name: "", title: "", company: "", noticeAddress: "" });
+  });
+
+  it("fills the open-ended options into the cover page", () => {
+    const md = fillCoverPage(template, toNdaData({ mndaTerm: "none", confidentialityTerm: "1" }));
+
+    expect(md).toContain("- [x] Continues until terminated");
+    expect(md).toContain("- [x] 1 year from Effective Date");
   });
 });
