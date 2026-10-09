@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { GREETING, sendChat, type ChatMessage, type NdaUpdates } from "@/lib/chat";
-import type { NdaData } from "@/lib/nda";
+import { sendChat, type ChatMessage, type DocumentState } from "@/lib/chat";
 
 type Props = {
-  data: NdaData;
-  onUpdate: (updates: NdaUpdates) => void;
+  greeting: ChatMessage;
+  document: DocumentState;
+  onChange: (document: DocumentState) => void;
 };
 
 function Bubble({ message }: { message: ChatMessage }) {
@@ -24,9 +24,9 @@ function Bubble({ message }: { message: ChatMessage }) {
   );
 }
 
-/** Free-form chat with the AI, which asks about the NDA and fills in its fields from the answers. */
-export default function NdaChat({ data, onUpdate }: Props) {
-  const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
+/** Free-form chat with the AI, which picks the document and fills in its fields from the answers. */
+export default function DocumentChat({ greeting, document, onChange }: Props) {
+  const [messages, setMessages] = useState<ChatMessage[]>([greeting]);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,9 +42,9 @@ export default function NdaChat({ data, onUpdate }: Props) {
     setPending(true);
     setError(null);
     try {
-      const { reply, updates } = await sendChat(history, data);
+      const { reply, documentId, values } = await sendChat(history, document);
       setMessages([...history, { role: "assistant", content: reply }]);
-      onUpdate(updates);
+      onChange({ documentId, values });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {

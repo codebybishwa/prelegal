@@ -2,10 +2,11 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import LoginForm from "./LoginForm";
-import NdaCreator from "./NdaCreator";
+import DocumentCreator from "./DocumentCreator";
 import { getUserEmail, signIn } from "@/lib/session";
-import { readTemplate } from "@/lib/templates";
+import { readDocumentTemplates, readRegistry } from "@/lib/templates";
 
+const registry = readRegistry();
 const router = { push: vi.fn(), replace: vi.fn() };
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
 
@@ -16,7 +17,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("LoginForm", () => {
-  it("signs in with any credentials and goes to the NDA creator", () => {
+  it("signs in with any credentials and goes to the document creator", () => {
     render(<LoginForm />);
 
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ada@acme.com" } });
@@ -24,7 +25,7 @@ describe("LoginForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
     expect(getUserEmail()).toBe("ada@acme.com");
-    expect(router.push).toHaveBeenCalledWith("/nda");
+    expect(router.push).toHaveBeenCalledWith("/create");
   });
 
   it("does not sign in until both email and password are filled", () => {
@@ -40,14 +41,9 @@ describe("LoginForm", () => {
   });
 });
 
-describe("NdaCreator access", () => {
+describe("DocumentCreator access", () => {
   const renderCreator = () =>
-    render(
-      <NdaCreator
-        coverPageTemplate={readTemplate("Mutual-NDA-coverpage.md")}
-        standardTerms={readTemplate("Mutual-NDA.md")}
-      />,
-    );
+    render(<DocumentCreator registry={registry} templates={readDocumentTemplates(registry)} />);
 
   it("redirects signed-out visitors to the login page and renders nothing", () => {
     const { container } = renderCreator();
@@ -61,7 +57,7 @@ describe("NdaCreator access", () => {
     renderCreator();
 
     expect(screen.getByText("ada@acme.com")).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Mutual NDA Creator" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Document Creator" })).toBeTruthy();
     expect(router.replace).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Log out" }));

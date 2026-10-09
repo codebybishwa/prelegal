@@ -15,7 +15,7 @@ export default function LoginForm() {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     signIn(email);
-    router.push("/nda");
+    router.push("/create");
   }
 
   return (

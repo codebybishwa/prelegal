@@ -5,13 +5,23 @@ from contextlib import asynccontextmanager, closing
 from fastapi import FastAPI, HTTPException, status
 from fastapi.staticfiles import StaticFiles
 
-from app.chat import ChatRequest, ChatResponse, LlmResponseError, LlmUnavailableError, chat_turn
+from app.chat import (
+    ChatRequest,
+    ChatResponse,
+    LlmResponseError,
+    LlmUnavailableError,
+    UnknownDocumentError,
+    chat_turn,
+)
 from app.config import Settings
 from app.db import connect, init_db
+from app.documents import load_registry
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings.from_env()
+    # Loaded up front so a missing or invalid documents.json fails at startup, not mid-chat.
+    registry = load_registry(settings.documents_path)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -29,7 +39,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.post("/api/chat")
     def chat(request: ChatRequest) -> ChatResponse:
         try:
-            return chat_turn(request, settings)
+            return chat_turn(request, settings, registry)
+        except UnknownDocumentError as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
         except LlmUnavailableError as exc:
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc
         except LlmResponseError as exc:

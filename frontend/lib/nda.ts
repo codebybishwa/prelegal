@@ -1,3 +1,6 @@
+import { NO_TERM, type Values } from "@/lib/documents";
+import { cell, formatDate, inline, years } from "@/lib/markdown";
+
 export type Party = {
   name: string;
   title: string;
@@ -34,34 +37,34 @@ export const defaultNdaData: NdaData = {
   party2: emptyParty,
 };
 
-/** Escapes user input so it renders as literal text in markdown (and never as raw HTML). */
-export function escapeMarkdown(value: string): string {
-  return value.replace(/[\\`*_{}[\]<>()#+\-.!|~&]/g, "\\$&");
-}
-
-/** User text as markdown paragraph content, or the template's placeholder if blank. */
-function inline(value: string, placeholder: string): string {
-  const text = value.trim();
-  if (!text) return placeholder;
-  return text.split(/\r?\n/).map(escapeMarkdown).join("  \n");
-}
-
-/** User text as a single table cell. */
-function cell(value: string): string {
-  return value.trim().split(/\r?\n/).map(escapeMarkdown).join("<br>");
-}
-
-function years(n: number): string {
-  return `${n} year${n === 1 ? "" : "s"}`;
+/**
+ * The NDA's typed data from the generic document values (see documents.json), so the
+ * cover page template can be filled. A "none" term means it has no fixed length.
+ */
+export function toNdaData(values: Values): NdaData {
+  const get = (key: string) => values[key] ?? "";
+  const term = (key: string) => (get(key) === NO_TERM ? null : Number(get(key)) || null);
+  const party = (id: string): Party => ({
+    name: get(`${id}.name`),
+    title: get(`${id}.title`),
+    company: get(`${id}.company`),
+    noticeAddress: get(`${id}.noticeAddress`),
+  });
+  return {
+    purpose: get("purpose"),
+    effectiveDate: get("effectiveDate"),
+    mndaTermYears: term("mndaTerm"),
+    confidentialityYears: term("confidentialityTerm"),
+    governingLaw: get("governingLaw"),
+    jurisdiction: get("chosenCourts"),
+    modifications: get("modifications"),
+    party1: party("party1"),
+    party2: party("party2"),
+  };
 }
 
 function checkbox(checked: boolean): string {
   return checked ? "- [x]" : "- [ ]";
-}
-
-export function formatDate(isoDate: string): string {
-  const [y, m, d] = isoDate.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-US", { dateStyle: "long" });
 }
 
 /**

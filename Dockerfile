@@ -4,7 +4,8 @@ WORKDIR /build/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./
-# The frontend reads agreement text from ../templates at build time.
+# The frontend reads the document definitions and agreement text from .. at build time.
+COPY documents.json /build/documents.json
 COPY templates/ /build/templates/
 RUN npm run build
 
@@ -15,6 +16,8 @@ WORKDIR /app/backend
 COPY backend/pyproject.toml backend/uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 COPY backend/app ./app
+# The backend validates chat answers against the same document definitions.
+COPY documents.json /app/documents.json
 COPY --from=frontend /build/frontend/out /app/frontend/out
 
 ENV PRELEGAL_STATIC_DIR=/app/frontend/out \
