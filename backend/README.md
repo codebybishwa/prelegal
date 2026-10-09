@@ -17,6 +17,23 @@ The SQLite database is temporary: it is deleted and recreated on every startup.
 | `OPEN_ROUTER_API_KEY` | _(unset)_                    | OpenRouter key for the AI chat (from `.env`) |
 | `PRELEGAL_LLM_MODEL`  | `openrouter/nvidia/nemotron-3-super-120b-a12b:free` | LiteLLM model id; must be a `:free` model |
 | `PRELEGAL_DOCUMENTS_PATH` | `documents.json` (repo root) | Supported documents and their fields |
+| `PRELEGAL_COOKIE_SECURE` | _(off)_                      | `1`/`true`/`yes` marks the session cookie `Secure`; enable behind HTTPS |
+
+## Accounts and drafts
+
+| Endpoint | Body | Result |
+| --- | --- | --- |
+| `POST /api/auth/signup` | `{email, password}` | `201 {email}` and signs in; `409` if the email is taken, `422` for an invalid email or a password outside 8-128 characters |
+| `POST /api/auth/signin` | `{email, password}` | `200 {email}` and signs in; `401 "Incorrect email or password."` |
+| `POST /api/auth/signout` | | `204`; ends the session |
+| `GET /api/auth/me` | | `{email}`, or `401` |
+| `GET /api/drafts` | | The user's drafts, newest first: `[{id, documentId, parties, updatedAt}]` |
+| `GET /api/drafts/{id}` | | `{id, documentId, values, messages, updatedAt}`, or `404` |
+
+Emails are case-insensitive. Passwords are hashed with scrypt (stdlib only). Signing in sets an
+HttpOnly, `SameSite=Lax` cookie `prelegal_session` holding a random token valid for 7 days; the
+`sessions` table stores only its SHA-256. Every endpoint except health and the auth ones requires
+a session (`401` otherwise). A user only ever sees their own drafts: anyone else's is a `404`.
 
 ## Supported documents
 
@@ -28,8 +45,12 @@ that it covers every template in `catalog.json` and every term each template ref
 
 ## AI chat
 
-`POST /api/chat` takes `{messages, documentId, values}` (the conversation, the selected document
-or `null`, and its current values) and returns `{reply, documentId, values}` after the turn. The
+`POST /api/chat` takes `{messages, documentId, values, draftId}` (the conversation, the selected
+document or `null`, its current values, and the draft being continued or `null`) and returns
+`{reply, documentId, values, draftId}` after the turn. It requires a session. Once a document is
+selected, each successful turn is saved to the user's draft (created on the first such turn, so
+the client sends the returned `draftId` from then on); `404` for a `draftId` that isn't the
+user's, checked before calling the AI. The
 AI picks the document from the conversation, explains when a requested document isn't supported
 and offers the closest one, and can switch documents later, which keeps the answers the two
 documents share. The server owns that state: it ignores unknown documents and drops invalid

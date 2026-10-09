@@ -50,6 +50,8 @@ class ChatRequest(BaseModel):
     documentId: str | None = None
     # The selected document's current values; ignored when no document is selected.
     values: dict[str, str] = Field(default_factory=dict, max_length=200)
+    # The saved draft this conversation continues; null until the first save.
+    draftId: int | None = None
 
 
 class ChatResponse(BaseModel):
@@ -57,6 +59,8 @@ class ChatResponse(BaseModel):
     documentId: str | None
     # Every field of the selected document after this turn (empty when none is selected).
     values: Values
+    # The draft this turn was saved to; null while no document is selected.
+    draftId: int | None = None
 
 
 # ---------- LLM output models ----------

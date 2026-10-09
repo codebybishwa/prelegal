@@ -1,3 +1,4 @@
+import { ApiError, apiFetch, SESSION_EXPIRED } from "@/lib/api";
 import type { DocumentDef, Values } from "@/lib/documents";
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -5,7 +6,8 @@ export type ChatMessage = { role: "user" | "assistant"; content: string };
 /** The selected document and its values; the backend owns both and returns them each turn. */
 export type DocumentState = { documentId: string | null; values: Values };
 
-export type ChatReply = DocumentState & { reply: string };
+/** `draftId` is the saved draft the turn was stored in; null until a document is selected. */
+export type ChatReply = DocumentState & { reply: string; draftId: number | null };
 
 export const NO_DOCUMENT: DocumentState = { documentId: null, values: {} };
 
@@ -22,25 +24,19 @@ export function buildGreeting(documents: DocumentDef[]): ChatMessage {
 
 const FALLBACK_ERROR = "The AI assistant could not be reached. Please try again.";
 
-/** Sends the conversation and current document to the backend; throws with a user-facing message on failure. */
-export async function sendChat(messages: ChatMessage[], { documentId, values }: DocumentState): Promise<ChatReply> {
-  let response: Response;
+/**
+ * Sends the conversation and current document to the backend, which saves the turn to the
+ * draft `draftId` (or a new draft). Throws with a user-facing message on failure.
+ */
+export async function sendChat(
+  messages: ChatMessage[],
+  { documentId, values }: DocumentState,
+  draftId: number | null = null,
+): Promise<ChatReply> {
   try {
-    response = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages, documentId, values }),
-    });
-  } catch {
-    throw new Error(FALLBACK_ERROR);
+    return await apiFetch<ChatReply>("/api/chat", FALLBACK_ERROR, { messages, documentId, values, draftId });
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401) throw new ApiError(SESSION_EXPIRED, 401);
+    throw e;
   }
-
-  if (!response.ok) {
-    const detail = await response
-      .json()
-      .then((body) => body?.detail)
-      .catch(() => null);
-    throw new Error(typeof detail === "string" ? detail : FALLBACK_ERROR);
-  }
-  return response.json();
 }

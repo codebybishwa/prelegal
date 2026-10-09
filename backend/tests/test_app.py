@@ -58,7 +58,7 @@ def test_startup_recreates_database_from_scratch(settings: Settings):
     with closing(sqlite3.connect(settings.database_path)) as conn:
         tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
     assert "leftover" not in tables
-    assert "users" in tables
+    assert {"users", "sessions", "drafts"} <= tables
 
 
 @pytest.mark.parametrize(
@@ -83,13 +83,20 @@ def test_settings_from_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     monkeypatch.setenv("OPEN_ROUTER_API_KEY", "sk-test")
     monkeypatch.setenv("PRELEGAL_LLM_MODEL", "openrouter/some/model:free")
     monkeypatch.setenv("PRELEGAL_DOCUMENTS_PATH", str(tmp_path / "documents.json"))
+    monkeypatch.setenv("PRELEGAL_COOKIE_SECURE", "1")
     assert Settings.from_env() == Settings(
         database_path=tmp_path / "x.db",
         static_dir=tmp_path / "static",
         openrouter_api_key="sk-test",
         llm_model="openrouter/some/model:free",
         documents_path=tmp_path / "documents.json",
+        cookie_secure=True,
     )
+
+
+def test_settings_cookie_not_secure_by_default(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.delenv("PRELEGAL_COOKIE_SECURE", raising=False)
+    assert Settings.from_env().cookie_secure is False
 
 
 def test_settings_default_documents_path_is_repo_definitions(monkeypatch: pytest.MonkeyPatch):

@@ -18,12 +18,16 @@ Completed (merged to `main`):
   - [`documents.json`](documents.json) is the single source of truth for each document's templates, party roles and fields. Both the backend and the frontend read it.
   - The Mutual NDA fills its own cover page template. Every other document gets a generated cover page with key terms and signatures.
   - The app lives at `/create`.
+- **PL-7: Multiple users and final polish.**
+  - Real sign-up (`/signup`) and sign-in (`/`) through `/api/auth/*`. Passwords are hashed with stdlib scrypt. The session is an HttpOnly cookie, and the `sessions` table stores only the token's SHA-256. `/api/chat` and `/api/drafts*` require a session.
+  - Autosaved drafts: `/api/chat` saves each turn once a document is selected (`draftId` in the request and response). "My documents" (`/documents`) lists drafts, and `/create/?doc=<id>` reopens one.
+  - A "drafts are subject to legal review" disclaimer appears as an app banner, on the auth pages, and at the top of every document, so it prints in the PDF too.
+  - All screens were polished, with a shared `AppHeader`.
 
 Not done yet:
 
-- Real sign-up/sign-in. Login is still a client-side stub that accepts any credentials; the `users` table exists but there are no auth endpoints.
-- Saving drafts.
 - Server-side PDF export. "Download PDF" uses the browser's print dialog.
+- Sign-in rate limiting.
 
 Development notes:
 

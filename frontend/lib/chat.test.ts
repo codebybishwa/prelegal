@@ -29,26 +29,37 @@ describe("sendChat", () => {
   const messages = [buildGreeting(registry.documents), { role: "user" as const, content: "An NDA with Globex" }];
   const state = { documentId: "mutual-nda", values: { governingLaw: "Delaware" } };
 
-  it("posts the conversation and document and returns the reply", async () => {
-    const reply = { reply: "Great", documentId: "mutual-nda", values: { governingLaw: "Delaware", purpose: "Hiring" } };
+  it("posts the conversation, document and draft, and returns the reply", async () => {
+    const reply = {
+      reply: "Great",
+      documentId: "mutual-nda",
+      values: { governingLaw: "Delaware", purpose: "Hiring" },
+      draftId: 7,
+    };
     const fetchMock = stubFetch(json(reply));
 
-    await expect(sendChat(messages, state)).resolves.toEqual(reply);
+    await expect(sendChat(messages, state, 7)).resolves.toEqual(reply);
 
     expect(fetchMock).toHaveBeenCalledOnce();
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("/api/chat");
     expect(init.method).toBe("POST");
-    expect(JSON.parse(init.body as string)).toEqual({ messages, ...state });
+    expect(JSON.parse(init.body as string)).toEqual({ messages, ...state, draftId: 7 });
   });
 
-  it("sends a null document before one is chosen", async () => {
-    const fetchMock = stubFetch(json({ reply: "Which document?", documentId: null, values: {} }));
+  it("sends a null document and draft before one is chosen", async () => {
+    const fetchMock = stubFetch(json({ reply: "Which document?", documentId: null, values: {}, draftId: null }));
 
     await sendChat(messages, NO_DOCUMENT);
 
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-    expect(JSON.parse(init.body as string)).toEqual({ messages, documentId: null, values: {} });
+    expect(JSON.parse(init.body as string)).toEqual({ messages, documentId: null, values: {}, draftId: null });
+  });
+
+  it("asks to sign in again when the session has ended", async () => {
+    stubFetch(json({ detail: "Please sign in to continue." }, 401));
+
+    await expect(sendChat(messages, state)).rejects.toThrow("Please sign in again.");
   });
 
   it("surfaces the backend's error detail", async () => {
