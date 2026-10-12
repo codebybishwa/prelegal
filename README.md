@@ -25,13 +25,13 @@ Describe the deal in plain English. PreLegal asks the right questions and fills 
 
 | | |
 | --- | --- |
-| 💬 **Conversational drafting** | Skip the forms. The AI works out which agreement you need and fills in each field from your answers. |
-| 📄 **Live preview** | The full agreement, with a cover page and signature block, updates as you chat. |
-| 🔀 **Switch mid-chat** | Change your mind and move to a different agreement. Answers the two documents share are kept. |
-| 💾 **Saved automatically** | Every draft is stored under **My documents**. Reopen one and carry on where you left off. |
-| 🔐 **Your own account** | Sign up and sign in. Each user only ever sees their own drafts. |
-| 🖨️ **PDF download** | Save the finished agreement as a PDF. |
-| 💸 **Zero AI cost** | Runs on a free OpenRouter model. Paid models are refused outright. |
+| **Conversational drafting** | Skip the forms. The AI works out which agreement you need and fills in each field from your answers. |
+| **Live preview** | The full agreement, with a cover page and signature block, updates as you chat. |
+| **Switch mid-chat** | Change your mind and move to a different agreement. Answers the two documents share are kept. |
+| **Saved automatically** | Every draft is stored under **My documents**. Reopen one and carry on where you left off. |
+| **Your own account** | Sign up and sign in. Each user only ever sees their own drafts. |
+| **PDF download** | Save the finished agreement as a PDF. |
+| **Zero AI cost** | Runs on a free OpenRouter model. Paid models are refused outright. |
 
 ### Agreements available
 
@@ -48,6 +48,8 @@ Describe the deal in plain English. PreLegal asks the right questions and fills 
 | Data Processing Agreement | Handling personal data between a provider and a customer |
 | Business Associate Agreement | Handling protected health information under HIPAA |
 | AI Addendum | Supplemental terms for a provider's AI services |
+
+<img width="1905" height="921" alt="image" src="https://github.com/user-attachments/assets/93b757c5-27f2-47ed-9339-df5a0703678c" />
 
 ---
 
